@@ -55,9 +55,9 @@ date_df <- dcast(date_df, bblid + timepoint + ntimepoints + dodiagnosis + diagno
 #
 #date_df2[,grepl("do", colnames(date_df2), ignore.case=TRUE)] <- as.Date(date_df2[,grepl("do", colnames(date_df2), ignore.case=TRUE)], format = "%m/%d/%y")
 #---- error
-#lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.factor) 
-#lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.POSIXct, format = "%m/%d/%y") 
-#lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.numeric, format = "%m/%d/%y") 
+#lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.factor)
+#lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.POSIXct, format = "%m/%d/%y")
+#lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.numeric, format = "%m/%d/%y")
 #
 #lapply(date_df2[,grep("do", colnames(date_df2), ignore.case=TRUE)], as.Date, origin="1970-01-01")
 #
@@ -78,29 +78,40 @@ date_df$age <- floor((as.numeric(date_df$dodiagnosis - date_df$dob))/365.25)
 ################################################################################
 # Write a function that returns the age at first and last diagnosis as an atomic vector of length two
 
-ageFristLast <- function(bblid){
-	forBblid <- subset(date_df, date_df$bblid == bblid) 
-	forBblid <- forBblid$age
-	aget1 <- forBblid[,1]
-	agetf <- forBblid[,2]
-	
+ageFirstLast <- function(bblid){
+	forBblid <- date_df[,c("bblid", "age")]
+	forBblid <- forBblid[forBblid$bblid == bblid,]
+	aget1 <- min(forBblid$age)
+	agetf <- max(forBblid$age)
 	ages <- c(aget1, agetf)
-	
+
 	return(ages)
 }
-
-
 
 # Write a function that returns, based on the age at assessment that you will calculate,
 # the assessment number (e.g., if a person comes in at ages 12, 15, and 17, they
 # would be assigned assessment numbers 1, 2, and 3, respectively)
 
+assessNumber <- function(bblid, newDate){
+  ## Must be in format: assessNumber(bblid, "MM/DD/YYYY")
+  ## example: assessNumber(80289, "10/20/2020")
+  newDate <- as.Date(newDate, format = "%m/%d/%Y", origin = "01/01/1970")
+  bday <- date_df[date_df$bblid == bblid,]$dob[1]
+  newAge <- floor((as.numeric(newDate - bday))/365.25)
+  totalAges <- c(ageFirstLast(bblid), newAge)
+  totalAges <- sort(totalAges, decreasing = FALSE)
+  index <- which(totalAges == newAge)
+  return(index)
+}
 
 
 ################################################################################
 
 # sapply() your ageFirstLast() function
+run <- sapply(date_df$, ageFirstLast)
+run
 
+final_df <- date_df
 
 # Recode variables
 final_df$Sex <- recode(final_df$sex, `1`='Male', `2`='Female')
@@ -116,11 +127,11 @@ final_df$Diagnosis <- ordered(final_df$Diagnosis, c('TD-TD', 'TD-OP', 'TD-PS',
 
 
 
-
-
 # ..........
 
 
 
 # merge date_df and screen_df so that you only get the bblids in date_df that are
 # in screen_df
+colnames(screen_df)[colnames(screen_df) == "BBLID"] <- "bblid"
+date_df <- merge(screen_df, date_df, by = "bblid")
