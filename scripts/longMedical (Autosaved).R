@@ -81,8 +81,8 @@ date_df$age <- floor((as.numeric(date_df$dodiagnosis - date_df$dob))/365.25)
 ageFristLast <- function(bblid){
 	forBblid <- subset(date_df, date_df$bblid == bblid) 
 	forBblid <- forBblid$age
-	aget1 <- forBblid[,1]
-	agetf <- forBblid[,2]
+	aget1 <- forBblid[1]
+	agetf <- forBblid[2]
 	
 	ages <- c(aget1, agetf)
 	
