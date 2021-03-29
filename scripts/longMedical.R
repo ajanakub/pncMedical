@@ -54,10 +54,10 @@ date_df <- date_df[date_df$timepoint == "t1" | mapply(grepl, date_df$ntimepoints
 ################################################################################
 # Write a function that returns the age at first and last diagnosis as an atomic vector of length two
 
-ageFirstLast <- function(i){
-  bblid <- date_df[i,"bblid"]
+ageFirstLast <- function(bblid){
+#  bblid <- date_df[i,"bblid"]
 	forBblid <- date_df[,c("bblid", "age")]
-	forBblid <- forBblid[forBblid$bblid == bblid,]
+	forBblid <- forBblid[forBblid$bblid == 80289,]
 	aget1 <- min(forBblid$age)
 	agetf <- max(forBblid$age)
 	ages <- c(aget1, agetf)
@@ -69,17 +69,38 @@ ageFirstLast <- function(i){
 # the assessment number (e.g., if a person comes in at ages 12, 15, and 17, they
 # would be assigned assessment numbers 1, 2, and 3, respectively). SPITS OUT EXACTLY
 # WHAT THE EXAMPLE SHOWS. INPUT -> OUTPUT
+# tester <- merge(date_df, screen_df, by = "bblid", no.dups = TRUE)
 
 colnames(screen_df)[colnames(screen_df) == "BBLID"] <- "bblid"
-tester <- merge(date_df[,1:2], screen_df, by = "bblid", no.dups = TRUE)
+screen_df$dob <- as.Date("1970-10-10")
+for(bblid in unique(date_df$bblid)) {
+  grabDOB <- date_df[date_df$bblid == bblid, "dob"][1]
+  screen_df[screen_df$bblid == bblid, "dob"] <- grabDOB
+}
+screen_df <- screen_df[!(screen_df$dob == "1970-10-10"),]
 
 screen_df$DOMHSCREEN <- as.Date(screen_df$DOMHSCREEN, format = "%m/%d/%y")
-screen_df$ages <- (as.numeric(screen_df$DOMHSCREEN - screen_df$dob))/365.25
+screen_df$age <- (as.numeric(screen_df$DOMHSCREEN - screen_df$dob))/365.25
 
+# assessNumber <- function(i){
+#  bblid <- screen_df[i,"bblid"]
+#  forBblid <- screen_df[,c("bblid", "age", "timepoint")]
+#  forBblid <- forBblid[forBblid$bblid == bblid,]
+#  forBblid$timepoint <- order(forBblid$age)
+#  return(forBblid)
+#}
+#ahhh <- sapply(1:nrow(screen_df), assessNumber)
+# Corrected but longer version:
+screen_df$timepoint <- NA
 assessNumber <- function(bblid){
-
+  forBblid <- screen_df[,c("bblid", "age")]
+  forBblid <- forBblid[forBblid$bblid == bblid,]
+  orderVals <- order(forBblid$age)
+  return(orderVals)
 }
-
+for(bblid in unique(screen_df$bblid)){
+screen_df[screen_df$bblid == bblid,]$timepoint <- assessNumber((bblid))
+}
 
 ################################################################################
 
@@ -96,10 +117,18 @@ date_df[c("firstAge", "lastAge")] <- t(sapply(1:nrow(date_df), ageFirstLast))
 # gtsummary ** : need like 50 tables, use a for loop -> html table output
 
 final_df <- date_df
+# olddate_df <- read.csv(file= "~/Box Sync/medical_pnc/pnc_longitudinal_diagnosis_n749_20210112.csv")
+final_df <- merge(demo_df, clinical_df, by = "bblid")
+final_df[c("firstAge", "lastAge")] <- t(sapply(1:nrow(final_df), ageFirstLast))
+
+for(bblid in final_df$bblid){
+final_df[final_df$bblid == bblid,]$firstAge <- ageFirstLast(bblid)[1]
+final_df[final_df$bblid == bblid,]$lastAge <- ageFirstLast(bblid)[2]
+}
 
 # Recode variables
 final_df$Sex <- recode(final_df$sex, `1`='Male', `2`='Female')
-final_df$Race <- recode(final_df$race, `1`='Caucasian', `2`='African American',
+final_df$race <- recode(final_df$race, `1`='Caucasian', `2`='African American',
   `3`='US India/Alaska Native', `4`='Asian', `5`='More Than One Race')
 final_df$Diagnosis <- recode(final_df$t1_tfinal, 'other_TD'='OP-TD',
   'other_other'='OP-OP', 'other_PS'='OP-PS', 'TD_other'='TD-OP', 'PS_other'='PS-OP',
@@ -107,16 +136,14 @@ final_df$Diagnosis <- recode(final_df$t1_tfinal, 'other_TD'='OP-TD',
 final_df$Diagnosis <- ordered(final_df$Diagnosis, c('TD-TD', 'TD-OP', 'TD-PS',
   'OP-TD', 'OP-OP', 'OP-PS', 'PS-TD', 'PS-OP', 'PS-PS'))
 
-
-
+medical_Table <- final_df %>% select("sex", "race", "firstAge", "lastAge",
+"t1_tfinal")
+medical_Table %>% tbl_summary(by = t1_tfinal)
 
 # ..........
 
-
-
 # merge date_df and screen_df so that you only get the bblids in date_df that are
 # in screen_df
-colnames(screen_df)[colnames(screen_df) == "BBLID"] <- "bblid"
-date_df <- merge(screen_df, date_df, by = "bblid")
+tester <- merge(screen_df, final_df, by = "bblid")
 
 # ..........
