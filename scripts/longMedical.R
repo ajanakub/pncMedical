@@ -10,6 +10,7 @@ library(gtsummary)
 library(dbplyr)
 library(dplyr)
 library(reshape2)
+library(gt)
 
 # Load data
 demo_df <- read.csv(file = "~/Box Sync/medical_pnc/n9498_demo_sex_race_ethnicity_dob.csv")
@@ -108,7 +109,7 @@ screen_df$age <- (as.numeric(screen_df$DOMHSCREEN - screen_df$dob))/365.25
 screen_df$timepoint <- NA
 assessNumber <- function(bblid){
   forBblid <- screen_df[screen_df$bblid == bblid, c("bblid", "age")]
-  orderVals <- order(forBblid$age, )
+  orderVals <- rank(forBblid$age)
   return(orderVals)
 }
 for(bblid in unique(screen_df$bblid)){
@@ -118,9 +119,6 @@ screen_df[screen_df$bblid == bblid, "timepoint"] <- assessNumber(bblid)
 ################################################################################
 
 # sapply() your ageFirstLast() function
-# Got an error for this line! But, tbh, I don't think its necessary. Can't I do
-# this after the merge (final_df)
-date_df[c("firstAge", "lastAge")] <- t(sapply(1:nrow(date_df), ageFirstLast))
 
 # assessNumber use to filter screen_df for the first time point
 # need to merge in dob to all of the dataframes in order to calc age
@@ -131,19 +129,15 @@ date_df[c("firstAge", "lastAge")] <- t(sapply(1:nrow(date_df), ageFirstLast))
 # Merge dob directly into screen_df and then do the assessNumber thingy
 # gtsummary ** : need like 50 tables, use a for loop -> html table output
 
-final_df <- date_df
-# olddate_df <- read.csv(file= "~/Box Sync/medical_pnc/pnc_longitudinal_diagnosis_n749_20210112.csv")
-# head(demo_df)
-# head(clinical_df)
+#ERROR:
 final_df <- merge(demo_df, clinical_df, by = "bblid")
-# final_df[c("firstAge", "lastAge")] <- t(sapply(1:nrow(final_df), ageFirstLast))
+# final_df[c("firstAge", "lastAge")] <- (sapply(final_df$bblid), ageFirstLast))
 
+final_df[c("firstAge", "lastAge")] <- NA
 for(bblid in final_df$bblid){
 final_df[final_df$bblid == bblid,]$firstAge <- ageFirstLast(bblid)[1]
 final_df[final_df$bblid == bblid,]$lastAge <- ageFirstLast(bblid)[2]
 }
-# Still wanna know why entering the c("firstAge", "lastAge") doesn't work if I
-# return as an atomic length of 2. **
 
 # Recode variables
 final_df$sex <- recode(final_df$sex, `1`='Male', `2`='Female')
@@ -156,8 +150,19 @@ final_df$Diagnosis <- ordered(final_df$Diagnosis, c('TD-TD', 'TD-OP', 'TD-PS',
   'OP-TD', 'OP-OP', 'OP-PS', 'PS-TD', 'PS-OP', 'PS-PS'))
 medical_Table <- final_df %>% select("sex", "race", "firstAge", "lastAge",
 "Diagnosis")
-plotMedical <- medical_Table %>% tbl_summary(by = Diagnosis, label =
+
+plotClinical <- medical_Table %>% tbl_summary(by = Diagnosis, label =
 list(sex ~ "Sex", race ~ "Race", firstAge ~ "First Age", lastAge ~ "Final Age"))
+plotClinical <- plotClinical %>% as_gt()
+gtsave(plotClinical,"plotClinical.html", "~/Documents/PennBBL/pncMedical/plots")
+
+#subsetting screen_df for only the first timepoints.
+screen_df <- screen_df[screen_df$timepoint == 1,]
+
+columns <- colnames(screen_df)
+for(i in colnames(screen_df)){
+  return(i)
+}
 
 # ..........
 
