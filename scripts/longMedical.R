@@ -129,8 +129,9 @@ screen_df[screen_df$bblid == bblid, "timepoint"] <- assessNumber(bblid)
 # Merge dob directly into screen_df and then do the assessNumber thingy
 # gtsummary ** : need like 50 tables, use a for loop -> html table output
 
-#ERROR:
+
 final_df <- merge(demo_df, clinical_df, by = "bblid")
+#ERROR:
 # final_df[c("firstAge", "lastAge")] <- (sapply(final_df$bblid), ageFirstLast))
 
 final_df[c("firstAge", "lastAge")] <- NA
@@ -156,19 +157,35 @@ list(sex ~ "Sex", race ~ "Race", firstAge ~ "First Age", lastAge ~ "Final Age"))
 plotClinical <- plotClinical %>% as_gt()
 gtsave(plotClinical,"plotClinical.html", "~/Documents/PennBBL/pncMedical/plots")
 
-#subsetting screen_df for only the first timepoints.
-screen_df <- screen_df[screen_df$timepoint == 1,]
+newScreen <- merge(screen_df, final_df, by = "bblid")
 
-columns <- colnames(screen_df)
-for(i in colnames(screen_df)){
-  return(i)
+#subsetting screen_df for only the first timepoints.
+newScreen <- newScreen[newScreen$timepoint == 1,]
+drop <- c("dob.x","dob.y","SID","OTHERID","OTHER_SITE", "PROTOCOL", "DOMHSCREEN",
+"timepoint", "ethnicity", "dob.y", "tfinal", "t1_tfinal", "t1", "lastAge", "age",
+"Diagnosis")
+newScreen <- newScreen[,!mapply(grepl,"NOTES", colnames(newScreen))]
+newScreen <- newScreen[,!(names(newScreen) %in% drop)]
+
+for(i in colnames(newScreen)[2:22]){
+  now <- na.omit(newScreen[newScreen[,2] %in% c("Y","N"),
+  c("bblid", i, "sex", "race", "firstAge")])
+  now <- now[,!colnames(now) == "bblid"]
+  assign(paste0("print", i), now)
+  print <- now %>% tbl_summary(by = colnames(now)[2], label =
+  list(sex ~ "Sex", race ~ "Race", firstAge ~ "First Age"))
+  print <- print %>% as_gt()
+  name <- paste0("print", i)
+  namer <- paste(name, "html", sep = ".")
+  gtsave(print, namer, "~/Documents/PennBBL/pncMedical/plots/medPlots")
 }
+
 
 # ..........
 
 # merge date_df and screen_df so that you only get the bblids in date_df that are
 # in screen_df
-tester <- merge(screen_df, final_df, by = "bblid")
+
 
 # ..........
 #for loop the screen_df for the diagnosis and include only the rows that have
