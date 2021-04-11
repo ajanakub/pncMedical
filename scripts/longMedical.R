@@ -154,25 +154,31 @@ newScreen <- newScreen[,!(names(newScreen) %in% drop)]
 # Grabbing t1_tfinal fron final_df to newScreen by bblid.
 newScreen <- merge(newScreen, final_df[, c("bblid", "t1_tfinal", "sex",
   "ethnicity")], by = "bblid")
- 
+
 # Recording variables for the table.
 newScreen$t1_tfinal <- recode(newScreen$t1_tfinal, 'other_TD'='OP-TD',
   'other_other'='OP-OP', 'other_PS'='OP-PS', 'TD_other'='TD-OP', 'PS_other'='PS-OP',
   'TD_TD'='TD-TD', 'TD_PS'='TD-PS', 'PS_TD'='PS-TD', 'PS_PS'='PS-PS')
 
+newScreen <- newScreen[, names(newScreen) != "TIMES_SEIZURE"]
+newScreen <- newScreen[, names(newScreen) != "AGE_SEIZURE"]
+newScreen <- newScreen[, names(newScreen) != "TIMES_HEADINJURY"]
+newScreen <- newScreen[, names(newScreen) != "UNCONSCIOUS_LENGTH"]
+newScreen <- newScreen[, names(newScreen) != "AGE_UNCONSCIOUS"]
+newScreen <- newScreen[, names(newScreen) != "UNCONSCIOUS_UNIT"]
+
 # For loop the screen_df for the diagnosis and include only the rows that have
 # valid values (Y/N) and only use the first ages. A table per medical diagnosis.
-for(i in names(newScreen)[2:22]){
+for(i in names(newScreen)[2:16]){
+# newScreen[newScreen[,i] %in% c("Y","N"),]
   now <- newScreen[!is.na(newScreen[,i]) & newScreen[,i] %in% c("Y","N"),
-    c("bblid", i, "sex", "race", "age", "t1_tfinal")]
-# Figure out what 136004 is missing (dob or DOMHSCREEN. Check allll ages.
+    c("bblid", i, "sex", "ethnicity", "medicalAges", "t1_tfinal")]
   now <- now[,names(now) != "bblid"]
   now <- now[,names(now) != i]
   show <- now %>% tbl_summary(by = names(now)[4], label =
-  list(sex ~ "Sex", race ~ "Race", age ~ "First Age")) %>%
+  list(sex ~ "Sex", ethnicity ~ "Race", medicalAges ~ "First Age")) %>%
     modify_spanning_header(paste("stat", 1:nrow(unique(now[4])), sep = "_") ~ i)
   show <- show %>% as_gt()
-#  %>% tab_style(style = cell_text(font = "Times", locations = all)
   name <- paste0("print", i)
   namer <- paste(name, "html", sep = ".")
   gtsave(show, namer, "~/Documents/PennBBL/pncMedical/tables/medTables")
