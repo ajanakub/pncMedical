@@ -159,13 +159,14 @@ newScreen <- merge(newScreen, final_df[, c("bblid", "t1_tfinal", "sex",
 newScreen$t1_tfinal <- recode(newScreen$t1_tfinal, 'other_TD'='OP-TD',
   'other_other'='OP-OP', 'other_PS'='OP-PS', 'TD_other'='TD-OP', 'PS_other'='PS-OP',
   'TD_TD'='TD-TD', 'TD_PS'='TD-PS', 'PS_TD'='PS-TD', 'PS_PS'='PS-PS')
+newScreen$t1_tfinal <- ordered(newScreen$t1_tfinal, c('TD-TD', 'TD-OP', 'TD-PS',
+    'OP-TD', 'OP-OP', 'OP-PS', 'PS-TD', 'PS-OP', 'PS-PS'))
+# Add back in the yes/no values for each medical diagnosis.
 
-newScreen <- newScreen[, names(newScreen) != "TIMES_SEIZURE"]
-newScreen <- newScreen[, names(newScreen) != "AGE_SEIZURE"]
-newScreen <- newScreen[, names(newScreen) != "TIMES_HEADINJURY"]
-newScreen <- newScreen[, names(newScreen) != "UNCONSCIOUS_LENGTH"]
-newScreen <- newScreen[, names(newScreen) != "AGE_UNCONSCIOUS"]
-newScreen <- newScreen[, names(newScreen) != "UNCONSCIOUS_UNIT"]
+removeColumn <- c("TIMES_SEIZURE", "TIMES_HEADINJURY", "UNCONSCIOUS_LENGTH",
+  "AGE_UNCONSCIOUS", "AGE_SEIZURE", "UNCONSCIOUS_UNIT")
+
+newScreen <- newScreen[,!(names(newScreen) %in% removeColumn)]
 
 # For loop the screen_df for the diagnosis and include only the rows that have
 # valid values (Y/N) and only use the first ages. A table per medical diagnosis.
@@ -183,3 +184,27 @@ for(i in names(newScreen)[2:16]){
   namer <- paste(name, "html", sep = ".")
   gtsave(show, namer, "~/Documents/PennBBL/pncMedical/tables/medTables")
 }
+
+################ Cleaning up dataframe with longitudinal medical info. #########
+# Creating a dataframe with the longitudinal medical history csv.
+medHistory <- read.csv(file = "~/Box Sync/medical_pnc/Longitudinal Medical/CommonInterviewScale_Capa_MedHistory_n9498.csv")
+
+# Creating a vector to drop the not needed columns to make it easier to manipulate.
+bleh <- c("redcapid", "redcap_data_access_group", "interview_id", "site_id",
+  "subject_id", "famid", "assessment_id", "protocol", "protocol_number",
+  "assessment", "libi_id", "version", "assessor", "interview_type", "location",
+  "location_other", "location_remote_type", "location_remote_method",
+  "location_remote_av", "location_remote_notes", "date1_note", "date2",
+  "date2_note", "previous_capa_date", "previous_capa_dayssince", "name",
+  "coll_name", "starttime", "capa_admin_complete", "medical_history",
+  "no_medical_history___2", "no_medical_history___9", "med001", "med002",
+  "med_height_src", "med003", "med_weight_src")
+
+# Dropping the columns.
+medHistory <- medHistory[,!(names(medHistory) %in% bleh)]
+
+# Further cleaning up data for 0 and 1 values for rows.
+medHistory <- medHistory[,sapply(medHistory, is.factor) |
+sapply(medHistory, is.numeric)]
+
+#
