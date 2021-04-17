@@ -171,7 +171,6 @@ newScreen <- newScreen[,!(names(newScreen) %in% removeColumn)]
 # For loop the screen_df for the diagnosis and include only the rows that have
 # valid values (Y/N) and only use the first ages. A table per medical diagnosis.
 for(i in names(newScreen)[2:16]){
-# newScreen[newScreen[,i] %in% c("Y","N"),]
   now <- newScreen[!is.na(newScreen[,i]) & newScreen[,i] %in% c("Y","N"),
     c("bblid", i, "sex", "ethnicity", "medicalAges", "t1_tfinal")]
   now <- now[,names(now) != "bblid"]
@@ -198,13 +197,132 @@ bleh <- c("redcapid", "redcap_data_access_group", "interview_id", "site_id",
   "date2_note", "previous_capa_date", "previous_capa_dayssince", "name",
   "coll_name", "starttime", "capa_admin_complete", "medical_history",
   "no_medical_history___2", "no_medical_history___9", "med001", "med002",
-  "med_height_src", "med003", "med_weight_src")
+  "med_height_src", "med003", "med_weight_src", "med815b", "med813b", "med810b",
+   "med809b", "med808b", "med804b", "med803b", "med800b", "med071", "med073",
+   "med122", "med126", "med119", "med131", "med140", "med144", "med146",
+   "med148", "med148a", "med149", "med151", "med151a", "med152", "med154",
+   "med154a", "med801b", "med802b", "med805b", "med806b", "med807b", "med811b",
+   "med812b", "med814b", "med816b", "med817b", "med750a", "med756", "med757")
 
-# Dropping the columns.
+# Dropping columns.
 medHistory <- medHistory[,!(names(medHistory) %in% bleh)]
+medHistory <- medHistory[,!(grepl("dur|notes|review|timestamp|feedback|summary|
+  history|check|complete|admin", names(medHistory)))]
 
-# Further cleaning up data for 0 and 1 values for rows.
-medHistory <- medHistory[,sapply(medHistory, is.factor) |
-sapply(medHistory, is.numeric)]
+# Renaming each column according to key.
+medHistory <- rename(medHistory, "AbnmBirth" = "med070", "AbnmDevelopment" =
+  "med072", "Headaches" = "med074" , "CopresentingHeadaches" = "med075",
+  "HeadacheSensitivitytoLightorSound" = "med076", "HeadacheswithNausea" =
+  "med077", "UnilateralHeadache" = "med078", "ThrobbingHeadaches" = "med079",
+  "HeadachesInterruptSchool" = "med080" , "DoctorVisitforHeadaches" = "med081",
+  "DiagnosedwithMigraines" = "med082", "TreatedforMigraines" = "med083",
+  "DiagnosedwithEpilepsy" = "med117", "ConvulsionsorSeizures" = "med116",
+  "TreatedwithEpilepsySeizuresorConvulsions" = "med118",
+  "AgeofLastSeizure" = "med120", "CauseofSeizuresFound" = "med121",
+  "SeizuresOnlyDuringFever" = "med124", "HistoryofSeriousHeadInjury" = "med125",
+  "LostConsciousnessfromHeadInjury" = "med127",
+  "HistoryofFractureorBreakSkull" = "med132",
+  "SurgerytoHeadduetoInjury" = "med133", "AmnesiaorMemoryLoss" = "med134",
+  "AbnormalHeadachesPostHeadSurgery" = "med138",
+  "PostHeadacheMemoryLoss" = "med139", "UnexplainedUnconsciousEvent" = "med145",
+  "UnconsciousnesstoOvernightHospitalization(FirstInstance)" = "med147",
+  "UnconsciousnesstoOvernightHospitalization(SecondInstance)" = "med150",
+  "UnconsciousnesstoOvernightHospitalization(ThirdInstance)" = "med153",
+  "BirthDefects" = "med236", "TreatedforBrithDefects" = "med238",
+  "BirthDefectaCurrentCondition" = "med241", "LeadPoisoning" = "med242",
+  "TreatedforLeadPoisoning" = "med244", "LeadPoisoningaCurrentCondition" =
+  "med247", "SpeechProblem" = "med248", "TreatedforSpeechProblem" = "med250",
+  "SpeechProblemaCurrentCondition" = "med253", "VocalTics" = "med254",
+  "TreatedforVocalTics" = "med256", "VocalTicsaCurrentCondition" = "med259",
+  "MotorTics" = "med260", "TreatmentforMotorTics" = "med262",
+  "MotorTicsaCurrentCondition" = "med265", "ReadingProblems" = "med267",
+  "TreatedforReadingProblems" = "med269", "ReadingProblemsaCurrentCondition" =
+  "med272", "LearningProblems" = "med273", "TreatedforLearningProblems" =
+  "med275", "LearningProblemsaCurrentCondition" = "med278",
+  "AutismorPervasiveDevelopmentDisorder" = "med291",
+  "TreatedforAutismorPervasiveDevelopmentDisorder" = "med293",
+  "AutismorPervasiveDevelopmentDisorderaCurrentCondition" = "med296",
+  "Sleepwalking" = "med297", "TreatedforSleepWalking" = "med299",
+  "SleepwalkingaCurrentCondition" = "med302", "Bedwetting(after5)" = "med303",
+  "TreatedforBedwetting(after5)" = "med305",
+  "Bedwetting(after5)aCurrentCondition" = "med308", "Allergies" = "med800",
+  "Allergies(withinlast6months)" = "med800c", "CardiovascularComplications" =
+  "med801", "CardiovascularComplicationsaCurrentCondition" = "med801c",
+  "EndocrinologyDisease" = "med802", "EndocrinologyDisease(withinlast6months)" =
+  "med802c", "ENTComplications" = "med803",
+  "ENTComplications(withinlast6months)" = "med803c", "GastrointestinalIssues" =
+  "med804", "GastrointestinalIssues(withinlast6months)" = "med804c",
+  "GeneticsDisorder" = "med805", "GeneticsDisorder(withinlast6months)" =
+  "med805c", "HematologyDisease" = "med806",
+  "HematologyDisease(withinlast6months)" = "med806c", "HepatologyDisease" =
+  "med807", "HepatologyDisease(withinlast6months)" = "med807c",
+  "ImmunologyDisorder" = "med808", "ImmunologyDisorder(withinlast6months)" =
+  "med808c", "InfectiousDisease" = "med809",
+  "InfectiousDisease(withinlast6months)" = "med809c", "MetabolicDisease" =
+  "med810", "MetabolicDisease(withinlast6months)" = "med810c",
+  "NephrologyDisease" = "med811", "NephrologyDisease(withinlast6months)" =
+  "med811c", "OncologyStatus" = "med812", "OncologyStatus(withinlast6months)" =
+  "med812c", "OrthopedicCondition" = "med813",
+  "OrthopedicCondition(withinlast6months)" = "med813c", "PlasticSurgery" =
+  "med814", "PlasticSurgery(withinlast6months)" = "med814c",
+  "PulmonaryDisease" = "med815", "PulmonaryDisease(withinlast6months)" =
+  "med815c", "RheumatologyDisease" = "med816",
+  "RheumatologyDisease(withinlast6months)" = "med816c",
+  "Urology/GynecologyCondition" = "med817",
+  "Urology/GynecologyCondition(withinlast6months)" = "med817c",
+  "CorrectedVision" = "med598", "CorrectedVision:NearSightedness" = "med604",
+  "TreatedforNearSightedness" = "med606", "NearSightednessaCurrentCondition" =
+  "med609", "CorrectedVision:FarSightedness" = "med610",
+  "TreatedforFarSightedness" = "med612", "FarSightednessaCurrentCondition" =
+  "med615", "CorrectedVision:Astigmatism" = "med616", "TreatedforAstigmatism" =
+  "med618", "AstigmatismaCurrentCondition" = "med621", "OtherVisionProblems" =
+  "med622", "TreatforOtherVisionProblems" = "med624",
+  "OtherVisionProblemsaCurrentCondition" = "med627", "HearingProblems" =
+  "med628", "MildHearingProblems" = "med634",
+  "TreatedforMildHearingProblems" = "med636",
+  "MildHearingProblemsaCurrentCondition" = "med639", "SevereHearingProblems" =
+  "med640", "TreatedforSevereHearingProblems" = "med642",
+  "SevereHearingProblemsaCurrentCondition" = "med645",
+  "CongenitalHearingProblems" = "med646",
+  "TreatedforCongenitalHearingProblems" = "med648",
+  "CongenitalHearingProblemsaCurrentCondition" = "med651",
+  "HearingProblems:AcquiredDeafness" = "med652", "TreatedforAquiredDeafness" =
+  "med654", "AcquiredDeafnessaCurrentCondition" = "med657",
+  "HuntingtonsDisease" = "med714", "TreatedforHuntingtonsDisease" = "med716",
+  "HuntingtonsDiseaseaCurrentCondition" = "med719", "Meningitis" = "med732",
+  "TreatedforMeningitis" = "med734", "MeningitisaCurrentCondition" = "med737",
+  "MotionSickness(5+episodes)" = "med738",
+  "TreatedforMotionSickness(5+episodes)" = "med740",
+  "MotionSicknessaCurrentCondition"= "med743", "MultipleSclerosis" = "med744",
+  "TreatedforMultipleSclerosis" = "med746",
+  "MultipleSclerosisaCurrentCondition" = "med749",
+  "NeurologicalorNeuromuscularProblems" = "med750",
+  "TreatedforNeurologicalorNeuromuscularProblems" = "med752",
+  "NeurologicalorNeuromuscularProblemsaCurrentCondition" = "med755",
+  "OtherMedicalConditions" = "med757a", "TreatedforOtherMedicalConditions" =
+  "med757b", "OtherMedicalConditionsaCurrentCondition" = "med757c"
+)
 
-#
+# Recoding 1 and 0 as Y/N
+medHistory[medHistory == "1"] <- "Y"
+medHistory[medHistory == "0"] <- "N"
+
+# Merging dataframes for only bblids with psychopathology and relevant data for
+# creating tables.
+medHistory <- merge(medHistory, final_df[, c("bblid", "t1_tfinal", "sex",
+  "ethnicity")], by = "bblid")
+medHistory <- merge(medHistory, newScreen[, c("bblid", "medicalAges")], by = "bblid")
+
+for(i in names(medHistory)[3:141]){
+  now <- medHistory[!is.na(medHistory[,i]) & medHistory[,i] %in% c("Y","N"),
+    c("bblid", i, "sex", "ethnicity", "medicalAges", "t1_tfinal")]
+  now <- now[,names(now) != "bblid"]
+  now <- now[,names(now) != i]
+  show <- now %>% tbl_summary(by = names(now)[4], label =
+  list(sex ~ "Sex", ethnicity ~ "Race", medicalAges ~ "First Age")) %>%
+    modify_spanning_header(paste("stat", 1:nrow(unique(now[4])), sep = "_") ~ i)
+  show <- show %>% as_gt()
+  name <- paste0("print", i)
+  namer <- paste(name, "html", sep = ".")
+  gtsave(show, namer, "~/Documents/PennBBL/pncMedical/tables/testerTables")
+}
