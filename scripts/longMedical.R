@@ -174,10 +174,9 @@ for(i in names(newScreen)[2:16]){
   now <- newScreen[!is.na(newScreen[,i]) & newScreen[,i] %in% c("Y","N"),
     c("bblid", i, "sex", "ethnicity", "medicalAges", "t1_tfinal")]
   now <- now[,names(now) != "bblid"]
-  now <- now[,names(now) != i]
-  show <- now %>% tbl_summary(by = names(now)[4], label =
+  show <- now %>% tbl_summary(by = names(now)[5], label =
   list(sex ~ "Sex", ethnicity ~ "Race", medicalAges ~ "First Age")) %>%
-    modify_spanning_header(paste("stat", 1:nrow(unique(now[4])), sep = "_") ~ i)
+    modify_spanning_header(paste("stat", 1:nrow(unique(now[5])), sep = "_") ~ i)
   show <- show %>% as_gt()
   name <- paste0("print", i)
   namer <- paste(name, "html", sep = ".")
@@ -307,22 +306,51 @@ medHistory <- rename(medHistory, "AbnmBirth" = "med070", "AbnmDevelopment" =
 medHistory[medHistory == "1"] <- "Y"
 medHistory[medHistory == "0"] <- "N"
 
+
 # Merging dataframes for only bblids with psychopathology and relevant data for
 # creating tables.
 medHistory <- merge(medHistory, final_df[, c("bblid", "t1_tfinal", "sex",
-  "ethnicity")], by = "bblid")
-medHistory <- merge(medHistory, newScreen[, c("bblid", "medicalAges")], by = "bblid")
+  "ethnicity", "dob")], by = "bblid")
+# medHistory <- merge(medHistory, newScreen[, c("bblid", "medicalAges")], by = "bblid")
 
-for(i in names(medHistory)[3:141]){
+
+# Calculating age for date of diagnosis of these medical OtherMedicalConditions
+medHistory$date <- as.Date(medHistory$date, format = "%m/%d/%y")
+medHistory$dob <- as.Date(medHistory$dob, format = "%m/%d/%y")
+medHistory <- medHistory[is.na(medHistory$date) == FALSE,]
+medHistory$newMedAges <- (as.numeric(medHistory$date - medHistory$dob))/365.25
+
+medHistory$t1_tfinal <- recode(medHistory$t1_tfinal, 'other_TD'='OP-TD',
+  'other_other'='OP-OP', 'other_PS'='OP-PS', 'TD_other'='TD-OP', 'PS_other'='PS-OP',
+  'TD_TD'='TD-TD', 'TD_PS'='TD-PS', 'PS_TD'='PS-TD', 'PS_PS'='PS-PS')
+medHistory$t1_tfinal <- ordered(medHistory$t1_tfinal, c('TD-TD', 'TD-OP', 'TD-PS',
+    'OP-TD', 'OP-OP', 'OP-PS', 'PS-TD', 'PS-OP', 'PS-PS'))
+
+for(i in names(medHistory)[3:80]){
   now <- medHistory[!is.na(medHistory[,i]) & medHistory[,i] %in% c("Y","N"),
-    c("bblid", i, "sex", "ethnicity", "medicalAges", "t1_tfinal")]
+    c("bblid", i, "sex", "ethnicity", "newMedAges", "t1_tfinal")]
   now <- now[,names(now) != "bblid"]
-  now <- now[,names(now) != i]
-  show <- now %>% tbl_summary(by = names(now)[4], label =
-  list(sex ~ "Sex", ethnicity ~ "Race", medicalAges ~ "First Age")) %>%
-    modify_spanning_header(paste("stat", 1:nrow(unique(now[4])), sep = "_") ~ i)
+  show <- now %>% tbl_summary(by = names(now)[5], label =
+  list(sex ~ "Sex", ethnicity ~ "Race", newMedAges ~ "First Age")) %>%
+    modify_spanning_header(paste("stat", 1:nrow(unique(now[5])), sep = "_") ~ i)
   show <- show %>% as_gt()
   name <- paste0("print", i)
   namer <- paste(name, "html", sep = ".")
-  gtsave(show, namer, "~/Documents/PennBBL/pncMedical/tables/testerTables")
+  setwd("~/Documents/PennBBL/pncMedical/tables/testerTables")
+  gtsave(show, namer, getwd())
 }
+
+for(i in names(medHistory)[81:141]){
+  now <- medHistory[!is.na(medHistory[,i]) & medHistory[,i] %in% c("Y","N"),
+    c("bblid", i, "sex", "ethnicity", "newMedAges", "t1_tfinal")]
+  now <- now[,names(now) != "bblid"]
+  show <- now %>% tbl_summary(by = names(now)[5], label =
+  list(sex ~ "Sex", ethnicity ~ "Race", newMedAges ~ "First Age")) %>%
+    modify_spanning_header(paste("stat", 1:nrow(unique(now[5])), sep = "_") ~ i)
+  show <- show %>% as_gt()
+  name <- paste0("print", i)
+  namer <- paste(name, "html", sep = ".")
+  setwd("~/Documents/PennBBL/pncMedical/tables/testerTables")
+  gtsave(show, namer, getwd())
+}
+# ls | wc -l
