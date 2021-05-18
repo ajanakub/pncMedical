@@ -1,5 +1,7 @@
 *data/*
 *plots/*
+*tables/*
+*.DS_Store*
 *.csv
 *.pdf
 *~
